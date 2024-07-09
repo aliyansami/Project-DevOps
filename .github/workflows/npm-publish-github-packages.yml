@@ -1,66 +1,106 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
-name: CI/CD Pipeline
+# # This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
+# # For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
+# name: CI/CD Pipeline
+
+# on:
+#   push:
+#     branches:
+#       - main  
+#   pull_request:
+#     branches:
+#       - main  
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest  # Operating system environment
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2  
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v2  
+#         with:
+#           node-version: 12
+
+#       - name: Install dependencies
+#         run: 
+#           npm install 
+
+#       # - name: Build Backend
+#       #   run: |
+#       #     cd backend
+#       #     npm run dev &
+        
+#       - name: Build Frontend
+#         run: 
+#           npm start &
+
+#       # - name: Install ESLint
+#       #   run: |
+#       #     cd backend
+#       #     npm install eslint --save-dev
+        
+#       # # - name: Run ESLint
+#       # #   run: |
+#       # #     npx eslint .
+
+#       # - name: Zip Backend
+#       #   run: |
+#       #     cd backend
+#       #     zip -r ../backend.zip ./
+
+#       # - name: Zip Frontend
+#       #   run: |
+#       #     cd frontend
+#       #     zip -r ../frontend.zip ./
+
+#       # - name: Package entire project
+#       #   run: |
+#       #     zip -r project.zip backend.zip frontend.zip
+
+#       # - name: Upload artifact
+#       #   uses: actions/upload-artifact@v2
+#       #   with:
+#       #     name: my-project-artifact
+#       #     path: project.zip  # Path to the artifact to upload
+
+
+
+
+name: Terraform Deployment
 
 on:
   push:
     branches:
-      - main  
-  pull_request:
-    branches:
-      - main  
+      - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest  # Operating system environment
+  terraform:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2  
+      - name: Fetching the code
+        uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2  
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          node-version: 12
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
 
-      - name: Install dependencies
-        run: 
-          npm install 
+      - name: Set up Terraform Environment
+        uses: hashicorp/setup-terraform@v1
 
-      # - name: Build Backend
-      #   run: |
-      #     cd backend
-      #     npm run dev &
-        
-      - name: Build Frontend
-        run: 
-          npm start &
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
 
-      # - name: Install ESLint
-      #   run: |
-      #     cd backend
-      #     npm install eslint --save-dev
-        
-      # # - name: Run ESLint
-      # #   run: |
-      # #     npx eslint .
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -out=tfplan
 
-      # - name: Zip Backend
-      #   run: |
-      #     cd backend
-      #     zip -r ../backend.zip ./
-
-      # - name: Zip Frontend
-      #   run: |
-      #     cd frontend
-      #     zip -r ../frontend.zip ./
-
-      # - name: Package entire project
-      #   run: |
-      #     zip -r project.zip backend.zip frontend.zip
-
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: my-project-artifact
-      #     path: project.zip  # Path to the artifact to upload
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
