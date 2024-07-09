@@ -74,6 +74,7 @@ on:
   push:
     branches:
       - dev
+      - main
 
 jobs:
   terraform:
